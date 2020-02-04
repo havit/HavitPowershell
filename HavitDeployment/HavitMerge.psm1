@@ -315,7 +315,6 @@ Function Merge-AppSettingsJsonFilesToZipFileAutomatically
         [Parameter(Mandatory)]
         [string] $Environment
     )
-    Import-Module HavitDeployment
 
     $zipFiles = Get-ChildItem -Path $TargetFolder -Filter *.zip -Recurse
 
