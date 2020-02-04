@@ -288,17 +288,17 @@ function Merge-JsonFileToJsonZipFile
 
 <#
 .SYNOPSIS
-Finds all appSettings*.Environment.json and merges them into appropriate appSettings*.json file in ZIP/WDP file.
+Finds all *.Environment.json and merges them into appropriate *.json file in ZIP/WDP file.
 
 .DESCRIPTION
 In target folder finds all ZIP/WDP files recursively.
-For every zip files finds appSettings*.Environment.json file and merges it to appropriate appSettings*.json file (the same without Envinroment).
+For every zip files finds *.Environment.json file and merges it to appropriate *.json file (the same without Envinroment).
 
 .PARAMETER TargetFolder
 Target folder to scan for ZIP/WDP files recursively.
 
 .PARAMETER Envinroment
-Envinroment
+Envinroment name to find configuration files.
 
 .INPUTS
 None. This function does not take input from the pipeline.
@@ -306,7 +306,7 @@ None. This function does not take input from the pipeline.
 .OUTPUTS
 None.
 #>
-Function Merge-AppSettingsJsonFilesToZipFileAutomatically
+Function Merge-ConfigurationJsonFilesToZipFileAutomatically
 {
     param (
         [Parameter(Mandatory)]
@@ -318,18 +318,18 @@ Function Merge-AppSettingsJsonFilesToZipFileAutomatically
 
     $zipFiles = Get-ChildItem -Path $TargetFolder -Filter *.zip -Recurse
 
-    $appSettingsPattern = "appSettings*." + $Environment + ".json"
+    $configurationFilePattern = "*." + $Environment + ".json"
     $environmentPatternToReplace = "\." + $Environment + "\."
 
     foreach ($zip in $zipFiles)
     {
         Write-Debug ("Processing " + $zip.FullName)
-         $appSettingsFiles = Get-ChildItem -Path $zip.Directory.FullName -Filter $appSettingsPattern
-        foreach ($appSettingsFile in $appSettingsFiles)
+        $configurationFiles = Get-ChildItem -Path $zip.Directory.FullName -Filter $configurationFilePattern
+        foreach ($configurationFile in $configurationFiles)
         {
-            $zipAppSettingsFile = $appSettingsFile.Name -Replace $environmentPatternToReplace, "."
-            Write-Debug ("Merging " + $appSettingsFile.FullName + " to " + $zipAppSettingsFile)
-            Merge-JsonFileToJsonZipFile -DiffJsonPath $appSettingsFile.FullName -TargetZipPath $zip.FullName -ZipFile $zipAppSettingsFile
+            $zipConfigurationFile = $configurationFile.Name -Replace $environmentPatternToReplace, "."
+            Write-Debug ("Merging " + $configurationFile.FullName + " to " + $zipConfigurationFile)
+            Merge-JsonFileToJsonZipFile -DiffJsonPath $configurationFile.FullName -TargetZipPath $zip.FullName -ZipFile $zipConfigurationFile
         }
     }
 }

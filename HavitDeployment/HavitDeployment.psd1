@@ -70,7 +70,7 @@ FunctionsToExport = @(
   'Merge-JsonFileToJsonFile',
   'Merge-JsonFiles',
   'Merge-JsonFileToJsonZipFile',
-  'Merge-AppSettingsJsonFilesToZipFileAutomatically',
+  'Merge-ConfigurationJsonFilesToZipFileAutomatically',
 
 # HavitCoreDeployment.psm1
   'Confirm-HavitDeployment',
