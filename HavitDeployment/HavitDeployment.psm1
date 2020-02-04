@@ -9,7 +9,7 @@ Export-ModuleMember -Function Remove-JsonComments
 Export-ModuleMember -Function Merge-JsonFileToJsonFile
 Export-ModuleMember -Function Merge-JsonFiles
 Export-ModuleMember -Function Merge-JsonFileToJsonZipFile
-Export-ModuleMember -Function Merge-AppSettingsJsonFilesToZipFileAutomaticaly
+Export-ModuleMember -Function Merge-AppSettingsJsonFilesToZipFileAutomatically
 
 # HavitCoreDeployment.psm1
 
