@@ -286,3 +286,51 @@ function Merge-JsonFileToJsonZipFile
     $zip.Dispose()   
 }
 
+<#
+.SYNOPSIS
+Finds all appSettings*.Environment.json and merges them into appropriate appSettings*.json file in ZIP/WDP file.
+
+.DESCRIPTION
+In target folder finds all ZIP/WDP files recursively.
+For every zip files finds appSettings*.Environment.json file and merges it to appropriate appSettings*.json file (the same without Envinroment).
+
+.PARAMETER TargetFolder
+Target folder to scan for ZIP/WDP files recursively.
+
+.PARAMETER Envinroment
+Envinroment
+
+.INPUTS
+None. This function does not take input from the pipeline.
+
+.OUTPUTS
+None.
+#>
+Function Merge-AppSettingsJsonFilesToZipFileAutomatically
+{
+    param (
+        [Parameter(Mandatory)]
+        [string] $TargetFolder,
+        
+        [Parameter(Mandatory)]
+        [string] $Environment
+    )
+    Import-Module HavitDeployment
+
+    $zipFiles = Get-ChildItem -Path $TargetFolder -Filter *.zip -Recurse
+
+    $appSettingsPattern = "appSettings*." + $Environment + ".json"
+    $environmentPatternToReplace = "\." + $Environment + "\."
+
+    foreach ($zip in $zipFiles)
+    {
+        Write-Debug ("Processing " + $zip.FullName)
+         $appSettingsFiles = Get-ChildItem -Path $zip.Directory.FullName -Filter $appSettingsPattern
+        foreach ($appSettingsFile in $appSettingsFiles)
+        {
+            $zipAppSettingsFile = $appSettingsFile.Name -Replace $environmentPatternToReplace, "."
+            Write-Debug ("Merging " + $appSettingsFile.FullName + " to " + $zipAppSettingsFile)
+            Merge-JsonFileToJsonZipFile -DiffJsonPath $appSettingsFile.FullName -TargetZipPath $zip.FullName -ZipFile $zipAppSettingsFile
+        }
+    }
+}

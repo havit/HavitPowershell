@@ -6,7 +6,7 @@
 RootModule = 'HavitDeployment.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.0'
+ModuleVersion = '1.0.1'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -65,20 +65,21 @@ Description = 'HAVIT Powershell Scripts for Applications Deployment'
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = @(
 
-# HavitDeployment.psm1
+# HavitMerge.psm1
+  'Remove-JsonComments',
+  'Merge-JsonFileToJsonFile',
+  'Merge-JsonFiles',
+  'Merge-JsonFileToJsonZipFile',
+  'Merge-AppSettingsJsonFilesToZipFileAutomatically',
+
+# HavitCoreDeployment.psm1
   'Confirm-HavitDeployment',
   'Find-HavitPackage',
   'Backup-HavitWebsiteToPackage',
   'Publish-HavitWebsitePackage',
   'Publish-HavitWebsiteAppOfflineFile',
   'Remove-HavitWebsiteAppOfflineFile',
-  'Publish-HavitWebsitePackageWithAppOfflineFile',
-  
-# HavitMerge.psm1
-  'Remove-JsonComments',
-  'Merge-JsonFileToJsonFile',
-  'Merge-JsonFiles',
-  'Merge-JsonFileToJsonZipFile',
+  'Publish-HavitWebsitePackageWithAppOfflineFile', 
   
 # HavitAzureDeployment.psm1
   'Get-HavitAzureWebApp',
