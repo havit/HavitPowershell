@@ -21,7 +21,7 @@ function Join-JsonValues
     {
        $BaseJson = $DiffJson;
     }
-    return $BaseJson
+    return ,$BaseJson # comma ensures NOT unwrapping signle-item arrays (otherwise array is returned but the unwrapped single item is consumed)
 }
 
 function Add-PropertyRecurse($source, $toExtend)
