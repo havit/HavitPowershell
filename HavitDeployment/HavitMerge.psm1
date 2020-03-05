@@ -109,8 +109,17 @@ function Remove-JsonComments
         [string] $jsonString
     )
 
-    #zdroj: https://stackoverflow.com/a/59264162
-    return $jsonString -replace '(?m)(?<=^([^"]|"[^"]*")*)//.*' -replace '(?ms)/\*.*?\*/'
+    # replace the escaped double quote because the following regex does not support it
+    # backslash is just a backslash
+    # back quote is an escape character
+    $jsonString = $jsonString.Replace("\`"", "!☢!☢!☢!")
+
+    # remove comments (does not support escaped double quote)
+    # source: https://stackoverflow.com/a/59264162
+    $jsonString = $jsonString -replace '(?m)(?<=^([^"]|"[^"]*")*)//.*' -replace '(?ms)/\*.*?\*/' 
+    
+    $jsonString = $jsonString.Replace("!☢!☢!☢!", "\`"") # replace the escaped double quote back
+    return $jsonString
 }
 
 
