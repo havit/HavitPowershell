@@ -287,6 +287,8 @@ function Merge-JsonFileToJsonZipFile
         $fileStream.Flush()
         $fileStream.Close()
         
+        $file.LastWriteTime = [DateTimeOffset]::Now
+        
         #smazat z tempu
         Remove-Item $jsonTempFile
     }
