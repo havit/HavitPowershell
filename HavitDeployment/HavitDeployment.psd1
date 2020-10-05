@@ -6,7 +6,7 @@
 RootModule = 'HavitDeployment.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.1'
+ModuleVersion = '1.0.2'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -72,6 +72,10 @@ FunctionsToExport = @(
   'Merge-JsonFileToJsonZipFile',
   'Merge-ConfigurationJsonFilesToZipFileAutomatically',
 
+# HavitMergeVariables.psm1
+  'Merge-AdosVariablesToJsonZipFile',
+  'Merge-AzureKeyVaultSecretsToJsonZipFile',
+
 # HavitCoreDeployment.psm1
   'Confirm-HavitDeployment',
   'Find-HavitPackage',
@@ -86,7 +90,7 @@ FunctionsToExport = @(
   'Get-HavitAzureWebAppPublishingInfo',
   'Backup-HavitAzureWebsiteToPackage',
   'Publish-HavitAzureWebsitePackage',
-  'Publish-HavitAzureWebsitePackageWithAppOfflineFile'
+  'Publish-HavitAzureWebsitePackageWithAppOfflineFile',
   'Reset-HavitAzureWebAppPublishingInfo'
 )
 

@@ -2,6 +2,7 @@
 Import-Module (Join-Path $PSScriptRoot -ChildPath HavitMerge.psm1)
 Import-Module (Join-Path $PSScriptRoot -ChildPath HavitCoreDeployment.psm1)
 Import-Module (Join-Path $PSScriptRoot -ChildPath HavitAzureDeployment.psm1)
+Import-Module (Join-Path $PSScriptRoot -ChildPath HavitAzureDeploymentVariables.psm1)
 
 # HavitMerge.psm1
 
@@ -10,6 +11,10 @@ Export-ModuleMember -Function Merge-JsonFileToJsonFile
 Export-ModuleMember -Function Merge-JsonFiles
 Export-ModuleMember -Function Merge-JsonFileToJsonZipFile
 Export-ModuleMember -Function Merge-ConfigurationJsonFilesToZipFileAutomatically
+
+# HavitMergeVariables.psm1
+Export-ModuleMember -Function Merge-AdosVariablesToJsonZipFile
+Export-ModuleMember -Function Merge-AzureKeyVaultSecretsToJsonZipFile
 
 # HavitCoreDeployment.psm1
 

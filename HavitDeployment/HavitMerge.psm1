@@ -21,7 +21,7 @@ function Join-JsonValues
     {
        $BaseJson = $DiffJson;
     }
-    return ,$BaseJson # comma ensures NOT unwrapping signle-item arrays (otherwise array is returned but the unwrapped single item is consumed)
+    return ,$BaseJson # comma ensures NOT unwrapping single-item arrays (otherwise array is returned but the unwrapped single item is consumed)
 }
 
 function Add-PropertyRecurse($source, $toExtend)
@@ -50,15 +50,22 @@ function Test-ForExcessiveProperty
 {
     param($Prefix, $BaseJson, $DiffJson)
 
-    # zkontroluje, zda BaseJson obsahuej všechny vlastnosti definované v DiffJson.
+    # zkontroluje, zda BaseJson obsahuje všechny vlastnosti definované v DiffJson.
     # Přebývající vlastnosti vypisuje jako warning.
     # Vrací true, pokud je nalezena přebývající vlastnost ($hasError).
 
     $hasError = $false;
+
+    if($DiffJson -eq $null)
+    {
+        #end recursion
+        return
+    }
+
     if($DiffJson.GetType().Name -eq "PSCustomObject")
     {
         foreach($Property in $DiffJson | Get-Member -type NoteProperty, Property)
-        {        
+        {      
             if($BaseJson.$($Property.Name) -eq $null)
             {
               Write-Warning ("Excesive value " + ($Prefix + $Property.Name))
@@ -264,7 +271,7 @@ function Merge-JsonFileToJsonZipFile
     {
         throw "No $ZipFile file found in $TargetZipPath."
     }
-
+    
     foreach ($file in $files)
     {
         Write-Host "Updating $($file.FullName) in $TargetZipPath"
