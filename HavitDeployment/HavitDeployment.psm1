@@ -1,8 +1,8 @@
 ﻿
 Import-Module (Join-Path $PSScriptRoot -ChildPath HavitMerge.psm1)
+Import-Module (Join-Path $PSScriptRoot -ChildPath HavitMergeVariables.psm1)
 Import-Module (Join-Path $PSScriptRoot -ChildPath HavitCoreDeployment.psm1)
 Import-Module (Join-Path $PSScriptRoot -ChildPath HavitAzureDeployment.psm1)
-Import-Module (Join-Path $PSScriptRoot -ChildPath HavitAzureDeploymentVariables.psm1)
 
 # HavitMerge.psm1
 
