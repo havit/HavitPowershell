@@ -14,6 +14,7 @@ Export-ModuleMember -Function Merge-ConfigurationJsonFilesToZipFileAutomatically
 
 # HavitMergeVariables.psm1
 Export-ModuleMember -Function Merge-AdosVariablesToJsonZipFile
+Export-ModuleMember -Function Merge-AdosVariablesToJsonZipFileAutomatically
 Export-ModuleMember -Function Merge-AzureKeyVaultSecretsToJsonZipFile
 
 # HavitCoreDeployment.psm1

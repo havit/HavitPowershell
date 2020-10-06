@@ -1,7 +1,8 @@
 ﻿function Get-AdosCustomVariables
 {
     param(
-        [string] $Prefix
+        [string] $Prefix,
+        [bool] $VerifySecretVariableUsage = $true
     )
 
     $result = @();
@@ -29,6 +30,13 @@
         $variablesNames = $variablesNames | Where-Object { -not ($_ -eq "VSTS_PROCESS_LOOKUP_ID") }
         $variablesNames = $variablesNames | Where-Object { -not ($_ -eq "MSDEPLOY_HTTP_USER_AGENT") }
         $variablesNames = $variablesNames | Where-Object { -not ($_ -eq "AZURE_HTTP_USER_AGENT") }
+        
+        # build values
+        $variablesNames = $variablesNames | Where-Object { -not ($_ -eq "resources.triggeringAlias") }
+        $variablesNames = $variablesNames | Where-Object { -not ($_ -eq "pipeline.workspace") }
+        $variablesNames = $variablesNames | Where-Object { -not ($_ -eq "common.testresultsdirectory") }
+        $variablesNames = $variablesNames | Where-Object { -not ($_ -eq "resources.triggeringCategory") }
+        $variablesNames = $variablesNames | Where-Object { -not ($_ -eq "TestFiles") }
 
         if ($Prefix -ne $null)
         {
@@ -40,27 +48,31 @@
         # convert list of variables to key-value pairs (variables and values)
         foreach ($variableName in $variablesNames)
         {
+            Write-Host $variableName
             $result += [pscustomobject]@{ Key = $variableName; Value = (Get-Item "env:$variableName" -ErrorAction SilentlyContinue).Value }
         }
     }
 
     Write-Host "$($result.Length) items found."
 
-    # check no secret variables (with the prefix) is used
-    Write-Host "Verifying secret VSTS variables..."
-    $secretVariablesNamesSerialized = $env:VSTS_SECRET_VARIABLES
-    if (![String]::IsNullOrWhiteSpace($secretVariablesNamesSerialized))
-    {    
-        $secretVariablesNames = $secretVariablesNamesSerialized | ConvertFrom-Json
-        if ($Prefix -ne $null)
-        {
-            Write-Host "Filtering secret variables using a prefix..."
-
-            $secretVariablesNames = $secretVariablesNames | Where-Object { $_.StartsWith($Prefix) } | ForEach-Object { $_.Substring($Prefix.Length) }
-
-            if ($secretVariablesNames.Length -gt 0)
+    if ($VerifySecretVariableUsage)
+    {
+        # check no secret variables (with the prefix) is used
+        Write-Host "Verifying secret VSTS variables..."
+        $secretVariablesNamesSerialized = $env:VSTS_SECRET_VARIABLES
+        if (![String]::IsNullOrWhiteSpace($secretVariablesNamesSerialized))
+        {    
+            $secretVariablesNames = $secretVariablesNamesSerialized | ConvertFrom-Json
+            if ($Prefix -ne $null)
             {
-                throw "Secret variables are not supported."
+                Write-Host "Filtering secret variables using a prefix..."
+
+                $secretVariablesNames = $secretVariablesNames | Where-Object { $_.StartsWith($Prefix) } | ForEach-Object { $_.Substring($Prefix.Length) }
+
+                if ($secretVariablesNames.Length -gt 0)
+                {
+                    throw "Secret variables are not supported."
+                }
             }
         }
     }
@@ -207,8 +219,60 @@ function Merge-AdosVariablesToJsonZipFile
         [String] $ZipFile
     )
 
-    $publicAdosVariables = Get-AdosCustomVariables
+    $publicAdosVariables = Get-AdosCustomVariables -Prefix $AdosVariablePrefix
     Merge-KeyValueVariablesToJsonZipFile -Variables $publicAdosVariables -TargetZipPath $TargetZipPath -ZipFile $ZipFile
+}
+
+<#
+.SYNOPSIS
+Merges ADOS public variables to a json file in a zip archive (can be also a web deploy package).
+
+.DESCRIPTION
+Merges ADOS public variables to a json file in a zip archive (can be also a web deploy package).
+ADOS variable name convention is "filename:Object.Object.Object". A filename determines a file in the target zip archive to merge to. Variables without a filename are ignored.
+Public ADOS variables must be in the base json file. Otherwise exception is thrown.
+Only public ADOS variables are supported. When any secret variables is found, exception is thrown.
+Json comments are removed (comments are not compatible with Powershell 5.x).
+Json formatting is ugly.
+
+.PARAMETER TargetZipPath
+The zip file which containing a base json into which ADOS variables are merged.
+
+.INPUTS
+None. This function does not take input from the pipeline.
+
+.OUTPUTS
+None.
+#>
+function Merge-AdosVariablesToJsonZipFileAutomatically
+{
+    param (
+        [Parameter(Mandatory = $true)]
+        [String] $TargetZipPath
+    )
+    
+    Write-Host "Reading all variables..."
+    $publicAdosVariables = Get-AdosCustomVariables -VerifySecretVariableUsage $false
+      
+    $fileNames = $publicAdosVariables | Where-Object { $_.Key.Contains(":") } | Select-Object @{ Label = "FileName"; Expression= { $_.Key.Split(':')[0] } }
+
+    if ($fileNames.Length -eq 0)
+    {
+        Write-Host "No variable found."
+    }
+
+    foreach ($fileName in $fileNames)
+    {
+        Write-Host "Processing variables for $($fileName.FileName)..."
+        if ($fileName.FileName.ToLower().EndsWith(".json"))
+        {
+            Merge-AdosVariablesToJsonZipFile -AdosVariablePrefix ($fileName.FileName + ":") -TargetZipPath $TargetZipPath -ZipFile $fileName.FileName
+        }
+        else
+        {
+            Write-Error "Unknown file format."
+        }
+    }
 }
 
 <#
