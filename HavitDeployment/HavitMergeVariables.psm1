@@ -50,8 +50,13 @@ function Get-AdosCustomVariables
         # convert list of variables to key-value pairs (variables and values)
         foreach ($variableName in $variablesNames)
         {
-            Write-Host $variableName
-            $result += [pscustomobject]@{ Key = $variableName; Value = (Get-Item "env:$variableName" -ErrorAction SilentlyContinue).Value }
+            $value = (Get-Item "env:$variableName" -ErrorAction SilentlyContinue).Value
+            $result += [pscustomobject]@{ Key = $variableName; Value = $value }
+        }
+
+        if ($env:SYSTEM_DEBUG -eq "true")
+        {
+            $result | Format-Table | Out-String|% {Write-Host $_}
         }
     }
 
