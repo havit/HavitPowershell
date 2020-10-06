@@ -1,4 +1,6 @@
-﻿function Get-AdosCustomVariables
+﻿# *** READING VARIABLES (ADOS & Azure KeyVault) **********
+
+function Get-AdosCustomVariables
 {
     param(
         [string] $Prefix,
@@ -7,7 +9,7 @@
 
     $result = @();
 
-    Write-Host "Reading and parsing public VSTS variables..."
+    Write-Host "Reading and parsing public ADOS variables..."
 
     $variablesNamesSerialized = $env:VSTS_PUBLIC_VARIABLES
     
@@ -15,7 +17,7 @@
     {    
         $variablesNames = $variablesNamesSerialized | ConvertFrom-Json
     
-        #remove VSTS system values
+        #remove ADOS system values
         $variablesNames = $variablesNames | Where-Object { -not ($_.StartsWith("agent.")) }
         $variablesNames = $variablesNames | Where-Object { -not ($_.StartsWith("release.")) }
         $variablesNames = $variablesNames | Where-Object { -not ($_.StartsWith("build.")) }
@@ -58,7 +60,7 @@
     if ($VerifySecretVariableUsage)
     {
         # check no secret variables (with the prefix) is used
-        Write-Host "Verifying secret VSTS variables..."
+        Write-Host "Verifying no secret ADOS variable is used..."
         $secretVariablesNamesSerialized = $env:VSTS_SECRET_VARIABLES
         if (![String]::IsNullOrWhiteSpace($secretVariablesNamesSerialized))
         {    
@@ -124,6 +126,8 @@ function Get-AzureKeyVaultSecrets
 
     return ,$result # comma ensures NOT unwrapping single-item arrays (otherwise array is returned but the unwrapped single item is consumed)
 }
+
+# *** SAVE VARIABLES TO JSON FILES **********
 
 function Convert-VariablesToObject
 {
@@ -320,4 +324,76 @@ function Merge-AzureKeyVaultSecretsToJsonZipFile
 
     $keyVaultVariables = Get-AzureKeyVaultSecrets -KeyVaultName $KeyVaultName -Prefix $KeyVaultSecretNamePrefix
     Merge-KeyValueVariablesToJsonZipFile -Variables $keyVaultVariables -TargetZipPath $TargetZipPath -ZipFile $ZipFile
+}
+
+# *** SAVE VARIABLES TO *.SETPARAMETERS.XML file **********
+
+function Save-KeyValueVariablesToSetParametersFile
+{
+    param (
+        [Parameter(Mandatory = $true)]
+        $Variables,
+
+        [Parameter(Mandatory = $true)]
+        [String] $TargetSetParametersFile
+    )
+
+    if ($Variables.Length -gt 0)
+    {
+        # load document
+        $xml = New-Object System.Xml.XmlDocument
+        $xml.Load($TargetSetParametersFile)
+
+        # set all values, write as error missing parameters
+        foreach ($variable in $Variables)
+        {
+            $xpath = "//setParameter[@name='$($variable.Key)']"
+            $node = $xml.SelectSingleNode($xpath);
+            if ($node -eq $null)
+            {
+                Write-Error "Parameter $($variable.Key) not found in $TargetSetParametersFile."
+            }
+            else
+            {
+                $node.SetAttribute("value", $variable.Value)
+            }
+        }
+
+        #save the document
+        $xml.Save($TargetSetParametersFile);
+    }
+}
+
+
+<#
+.SYNOPSIS
+Saves ADOS variables to a SetParameters.xml file.
+
+.DESCRIPTION
+Saves ADOS variables to a SetParameters.xml file.
+Only public ADOS variables are supported. When any secret variables is found, exception is thrown.
+
+.PARAMETER AdosVariablePrefix
+Prefix of the ADOS variables to be used. Prefix is removed from the variable names.
+
+.PARAMETER TargetSetParametersFile
+SetParameters.xml file to be updated.
+
+.INPUTS
+None. This function does not take input from the pipeline.
+
+.OUTPUTS
+None.
+#>
+function Save-AdosVariablesToSetParametersFile
+{
+    param (
+        [String] $AdosVariablePrefix,
+
+        [Parameter(Mandatory = $true)]
+        [String] $TargetSetParametersFile
+    )
+
+    $publicAdosVariables = Get-AdosCustomVariables -Prefix $AdosVariablePrefix
+    Save-KeyValueVariablesToSetParametersFile -Variables $publicAdosVariables -TargetSetParametersFile $TargetSetParametersFile
 }

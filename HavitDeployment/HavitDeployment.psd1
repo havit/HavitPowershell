@@ -6,7 +6,7 @@
 RootModule = 'HavitDeployment.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.4'
+ModuleVersion = '1.0.5'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -76,6 +76,7 @@ FunctionsToExport = @(
   'Merge-AdosVariablesToJsonZipFile',
   'Merge-AdosVariablesToJsonZipFileAutomatically',
   'Merge-AzureKeyVaultSecretsToJsonZipFile',
+  'Save-AdosVariablesToSetParametersFile',
 
 # HavitCoreDeployment.psm1
   'Confirm-HavitDeployment',
