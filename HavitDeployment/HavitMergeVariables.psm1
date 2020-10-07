@@ -280,14 +280,10 @@ function Merge-AdosVariablesToJsonZipFileAutomatically
 
     foreach ($fileName in $fileNames)
     {
-        Write-Host "Processing variables for $($fileName.FileName)..."
         if ($fileName.FileName.ToLower().EndsWith(".json"))
         {
+            Write-Host "Processing variables for $($fileName.FileName)..."
             Merge-AdosVariablesToJsonZipFile -AdosVariablePrefix ($fileName.FileName + ":") -TargetZipPath $TargetZipPath -ZipFile $fileName.FileName
-        }
-        else
-        {
-            Write-Error "Unknown file format."
         }
     }
 }
