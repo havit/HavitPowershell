@@ -45,15 +45,21 @@ function Get-AdosCustomVariables
         {
             Write-Host "Filtering public variables using a prefix..."
 
-            $variablesNames = $variablesNames | Where-Object { $_.StartsWith($Prefix) } | ForEach-Object { $_.Substring($Prefix.Length) }
+            $variablesNames = $variablesNames | Where-Object { $_.StartsWith($Prefix) }
         }
 
         # convert list of variables to key-value pairs (variables and values)
         foreach ($variableName in $variablesNames)
         {
+            $variableNameWithoutPrefix = $variableName;
+            if ($Prefix -ne $null)
+            {
+                $variableNameWithoutPrefix = $variableName.Substring($Prefix.Length)
+            }
+
             $environmentVariableName = $variableName.Replace(".", "_") #environment variables do not contains dots but underscores
             $value = (Get-Item "env:$environmentVariableName" -ErrorAction SilentlyContinue).Value                        
-            $result += [pscustomobject]@{ Key = $variableName; Value = $value }
+            $result += [pscustomobject]@{ Key = $variableNameWithoutPrefix; Value = $value }
         }
 
         if ($env:SYSTEM_DEBUG -eq "true")
