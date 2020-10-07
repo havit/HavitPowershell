@@ -39,6 +39,7 @@ function Get-AdosCustomVariables
         $variablesNames = $variablesNames | Where-Object { -not ($_ -eq "common.testresultsdirectory") }
         $variablesNames = $variablesNames | Where-Object { -not ($_ -eq "resources.triggeringCategory") }
         $variablesNames = $variablesNames | Where-Object { -not ($_ -eq "TestFiles") }
+        $variablesNames = $variablesNames | Where-Object { -not ($_ -eq "Havit.Build.Compilation.MSBuildArguments.Computed") }              
 
         if ($Prefix -ne $null)
         {
@@ -50,7 +51,8 @@ function Get-AdosCustomVariables
         # convert list of variables to key-value pairs (variables and values)
         foreach ($variableName in $variablesNames)
         {
-            $value = (Get-Item "env:$variableName" -ErrorAction SilentlyContinue).Value
+            $environmentVariableName = $variableName.Replace(".", "_") #environment variables do not contains dots but underscores
+            $value = (Get-Item "env:$environmentVariableName" -ErrorAction SilentlyContinue).Value                        
             $result += [pscustomobject]@{ Key = $variableName; Value = $value }
         }
 
