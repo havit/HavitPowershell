@@ -266,6 +266,8 @@ function Merge-JsonFileToJsonZipFile
     $zip =  [System.IO.Compression.ZipFile]::Open($TargetZipPath, [System.IO.Compression.ZipArchiveMode]::Update)
     
     $files = $zip.Entries.Where({$_.name -ieq $ZipFile})
+    $brotliFiles = $zip.Entries.Where({$_.name -ieq ($ZipFile + '.br')}) # pokud je vedle souboru ještě komprimovaný soubor, potřebujeme jej aktualizovat (prozatím jej odstraníme)
+    $gzipFiles = $zip.Entries.Where({$_.name -ieq ($ZipFile + '.gz')}) # pokud je vedle souboru ještě komprimovaný soubor, potřebujeme jej aktualizovat (prozatím jej odstraníme)
    
     if (!$files)
     {
@@ -298,6 +300,18 @@ function Merge-JsonFileToJsonZipFile
         
         #smazat z tempu
         Remove-Item $jsonTempFile
+    }
+
+    foreach ($brotliFile in $brotliFiles)
+    {
+        Write-Host "Deleting $($brotliFile.Name) from $TargetZipPath"
+        $brotliFile.Delete()
+    }
+
+    foreach ($gzipFile in $gzipFiles)
+    {
+        Write-Host "Deleting $($gzipFile.Name) from $TargetZipPath"
+        $gzipFile.Delete()
     }
 
     # Write the changes and close the zip file
