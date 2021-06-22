@@ -6,7 +6,7 @@ function Join-JsonValues
     param($BaseJson, $DiffJson)
         
     # Do BaseJson "přimerguje" hodnoty z DiffJson. Hodnoty přebývající v DiffJson oproti BaseJson, se do výsledu nedostanou.
-    if ($BaseJson.GetType().Name -eq "PSCustomObject" -and $DiffJson.GetType().Name -eq "PSCustomObject")
+    if ($null -ne $BaseJson -and $BaseJson.GetType().Name -eq "PSCustomObject" -and $DiffJson.GetType().Name -eq "PSCustomObject")
     {
         foreach ($Property in $BaseJson | Get-Member -type NoteProperty, Property)
         {
