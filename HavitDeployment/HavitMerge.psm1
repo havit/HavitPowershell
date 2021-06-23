@@ -6,22 +6,29 @@ function Join-JsonValues
     param($BaseJson, $DiffJson)
         
     # Do BaseJson "přimerguje" hodnoty z DiffJson. Hodnoty přebývající v DiffJson oproti BaseJson, se do výsledu nedostanou.
-    if($BaseJson.GetType().Name -eq "PSCustomObject" -and $DiffJson.GetType().Name -eq "PSCustomObject")
+    if ($null -ne $BaseJson -and $BaseJson.GetType().Name -eq "PSCustomObject" -and $DiffJson.GetType().Name -eq "PSCustomObject")
     {
-        foreach($Property in $BaseJson | Get-Member -type NoteProperty, Property)
+        foreach ($Property in $BaseJson | Get-Member -type NoteProperty, Property)
         {
-            if($DiffJson.$($Property.Name) -eq $null)
+            # Pokud existuje objekt v Diff Jsonu, tak ho chceme nastavit, když je null
+            if ($null -eq $DiffJson.$($Property.Name) -and $DiffJson.PSObject.Properties.name -match $Property.Name)
             {
-              continue;
+                $BaseJson.$($Property.Name) = $null;
+                continue;
+            }
+
+            if ($null -eq $DiffJson.$($Property.Name))
+            {
+                continue;
             }
             $BaseJson.$($Property.Name) = Join-JsonValues -BaseJson $BaseJson.$($Property.Name) $DiffJson.$($Property.Name)
         }
     }
     else
     {
-       $BaseJson = $DiffJson;
+        $BaseJson = $DiffJson;
     }
-    return ,$BaseJson # comma ensures NOT unwrapping single-item arrays (otherwise array is returned but the unwrapped single item is consumed)
+    return , $BaseJson # comma ensures NOT unwrapping single-item arrays (otherwise array is returned but the unwrapped single item is consumed)
 }
 
 function Add-PropertyRecurse($source, $toExtend)
@@ -29,17 +36,17 @@ function Add-PropertyRecurse($source, $toExtend)
     # Do source "přimerguje" hodnoty z extend, které v source ještě nejsou.    
     # Šito na míru pro použití v Merge-JsonObjects, tedy že před volání této metody je zavoláno Join-Objects, která nejprve source rozšíří o společné hodnoty.
     # Realizováno tak, že vlastně source (na který byly nejprve aplikovány společné hodnoty) dostane do extendu.
-    if($source.GetType().Name -eq "PSCustomObject")
+    if ($source.GetType().Name -eq "PSCustomObject")
     {
-        foreach($Property in $source | Get-Member -type NoteProperty, Property)
+        foreach ($Property in $source | Get-Member -type NoteProperty, Property)
         {        
-            if($toExtend.$($Property.Name) -eq $null)
+            if ($null -eq $toExtend.$($Property.Name))
             {
-              $toExtend | Add-Member -MemberType NoteProperty -Value $source.$($Property.Name) -Name $Property.Name
+                $toExtend | Add-Member -MemberType NoteProperty -Value $source.$($Property.Name) -Name $Property.Name
             }
             else
             {
-               $toExtend.$($Property.Name) = Add-PropertyRecurse $source.$($Property.Name) $toExtend.$($Property.Name)
+                $toExtend.$($Property.Name) = Add-PropertyRecurse $source.$($Property.Name) $toExtend.$($Property.Name)
             }
         }
     }
@@ -56,20 +63,22 @@ function Test-ForExcessiveProperty
 
     $hasError = $false;
 
-    if($DiffJson -eq $null)
+    if ($null -eq $DiffJson)
     {
         #end recursion
         return
     }
 
-    if($DiffJson.GetType().Name -eq "PSCustomObject")
+    if ($DiffJson.GetType().Name -eq "PSCustomObject")
     {
-        foreach($Property in $DiffJson | Get-Member -type NoteProperty, Property)
-        {      
-            if($BaseJson.$($Property.Name) -eq $null)
+        foreach ($Property in $DiffJson | Get-Member -type NoteProperty, Property)
+        {   
+            # pokud hodnota je null a zároveň neexistuje v BaseJson, tak je to hodnota navíc
+            # Musíme kontrolovat, zda hodnota v BaseJson existuje, protože $null může schválně být uměle nastavena
+            if ($null -eq $BaseJson.$($Property.Name) -and (-Not($BaseJson.PSObject.Properties.name -match $Property.Name)))
             {
-              Write-Warning ("Excesive value " + ($Prefix + $Property.Name))
-              $hasError = $true
+                Write-Warning ("Excesive value " + ($Prefix + $Property.Name))
+                $hasError = $true
             }
             else
             {
@@ -263,11 +272,11 @@ function Merge-JsonFileToJsonZipFile
     Add-Type -assembly  System.IO.Compression
     Add-Type -assembly  System.IO.Compression.FileSystem
 
-    $zip =  [System.IO.Compression.ZipFile]::Open($TargetZipPath, [System.IO.Compression.ZipArchiveMode]::Update)
+    $zip = [System.IO.Compression.ZipFile]::Open($TargetZipPath, [System.IO.Compression.ZipArchiveMode]::Update)
     
-    $files = $zip.Entries.Where({$_.name -ieq $ZipFile})
-    $brotliFiles = $zip.Entries.Where({$_.name -ieq ($ZipFile + '.br')}) # pokud je vedle souboru ještě komprimovaný soubor, potřebujeme jej aktualizovat (prozatím jej odstraníme)
-    $gzipFiles = $zip.Entries.Where({$_.name -ieq ($ZipFile + '.gz')}) # pokud je vedle souboru ještě komprimovaný soubor, potřebujeme jej aktualizovat (prozatím jej odstraníme)
+    $files = $zip.Entries.Where( { $_.name -ieq $ZipFile })
+    $brotliFiles = $zip.Entries.Where( { $_.name -ieq ($ZipFile + '.br') }) # pokud je vedle souboru ještě komprimovaný soubor, potřebujeme jej aktualizovat (prozatím jej odstraníme)
+    $gzipFiles = $zip.Entries.Where( { $_.name -ieq ($ZipFile + '.gz') }) # pokud je vedle souboru ještě komprimovaný soubor, potřebujeme jej aktualizovat (prozatím jej odstraníme)
    
     if (!$files)
     {
@@ -278,7 +287,7 @@ function Merge-JsonFileToJsonZipFile
     {
         Write-Host "Updating $($file.FullName) in $TargetZipPath"
 
-        $streamReader =  [System.IO.StreamReader]($file).Open()
+        $streamReader = [System.IO.StreamReader]($file).Open()
         $jsonText = $streamReader.ReadToEnd()
         $streamReader.Close()
                
