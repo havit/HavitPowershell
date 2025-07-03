@@ -81,7 +81,10 @@ function Publish-HavitWebsitePackageInternal {
     $msDeployArguments += '-disableLink:CertificateExtension'
     $msDeployArguments += '-allowUntrusted'
     $msDeployArguments += '-useChecksum'    
-    # $msDeployArguments += '-verbose'    
+    if ($env:VerboseMsDeploy -eq $true)
+    {
+        $msDeployArguments += '-verbose'    
+    }
     $msDeployArguments += '-source:package="{0}"' -f ([IO.Path]::GetFullPath($WdpFile))    
     
     $isParamFilePresentInWdpFile = Is-ParamFilePresentInWdpFile $WdpFile
