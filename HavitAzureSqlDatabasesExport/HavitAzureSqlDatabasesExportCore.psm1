@@ -142,7 +142,7 @@
                     }
                     Start-Sleep -Second 15 # pokud by se změnilo, pozor na podmínku ukončení cyklu z důvodu timeoutu
                     $exportRequestStatus = Get-AzSqlDatabaseImportExportStatus -OperationStatusLink $exportRequest.OperationStatusLink
-                    Write-Host "  $($counter): Database $($exportStatus.DatabaseName) export status is $($exportRequestStatus.Status) ($($exportRequestStatus.StatusMessage))."                        
+                    Write-Host "  $($counter): Database $($database.DatabaseName) export status is $($exportRequestStatus.Status) ($($exportRequestStatus.StatusMessage))."                        
                 } while ($exportRequestStatus.Status -eq "InProgress")
             }
         }
