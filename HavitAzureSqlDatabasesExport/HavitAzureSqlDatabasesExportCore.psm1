@@ -154,7 +154,7 @@
                 do
                 {
                     $counter += 1
-                    if ($counter -eq 240) # 60 minut
+                    if ($counter -eq 480) # 120 minut
                     {
                         Write-Warning "Timeout reached during database $($exportRequest.DatabaseName) export."
                         break
