@@ -34,7 +34,7 @@
     $exportFailed = $false
     
     foreach ($database in $databases)
-    {       
+    {           
         if ($database.DatabaseName -match '_d{4}-\d{2}-\d{2}T\d{2}-\d{2}Z$')
         {
             Write-Host "Skipping export $($database.DatabaseName) database."
@@ -83,45 +83,64 @@
             # PRIVATE LINK ACCEPTANCE
             if ($dbServerResourceIdForPrivateLink)
             {
-                $exportRequestStatus = Get-AzSqlDatabaseImportExportStatus $exportRequest.OperationStatusLink
-            
                 $counter = 1
+                $exportRequestStatus = Get-AzSqlDatabaseImportExportStatus $exportRequest.OperationStatusLink                
                 while ($exportRequestStatus.PrivateEndpointRequestStatus.Count -eq 0)
                 {
-                if ($counter -ge 12)
-                {
-                    Write-Error "Private link information not retrieved."
-                    $exportFailed = $true
-                }
-                $counter += 1
-                Write-Host "Waiting for private link connection info..."
-                Start-Sleep -Seconds 15
-                $exportRequestStatus = Get-AzSqlDatabaseImportExportStatus $exportRequest.OperationStatusLink
+                    if ($counter -ge 12)
+                    {
+                        Write-Error "Private link information not retrieved."
+                        $exportFailed = $true
+                        break
+                    }
+                    $counter += 1
+                    Write-Host "Waiting for private link connection info..."
+                    Start-Sleep -Seconds 15
+                    $exportRequestStatus = Get-AzSqlDatabaseImportExportStatus $exportRequest.OperationStatusLink
                 }
 
-                $sqlServerPrivateEndpointConnection = Get-AzPrivateEndpointConnection -PrivateLinkResourceId /subscriptions/164890bd-0fa2-4069-9280-7ccfa3624154/resourceGroups/Default-SQL-WestEurope/providers/Microsoft.Sql/servers/havitdbserver1 | where { $_.Name.StartsWith('ImportExportPrivateLink_SQL') }  | where {$_.PrivateLinkServiceConnectionState.Status -eq "Pending" }
-                $storagePrivateEndpointConnection = Get-AzPrivateEndpointConnection -PrivateLinkResourceId /subscriptions/164890bd-0fa2-4069-9280-7ccfa3624154/resourceGroups/HavitInternalBackupsRG/providers/Microsoft.Storage/storageAccounts/havittransientbackups  | where {$_.PrivateLinkServiceConnectionState.Status -eq "Pending" }
+                $counter = 1
+                $sqlServerPrivateEndpointConnection = Get-AzPrivateEndpointConnection -PrivateLinkResourceId $DbServerResourceIdForPrivateLink | where { $_.Name.StartsWith('ImportExportPrivateLink_SQL') } | where {$_.PrivateLinkServiceConnectionState.Status -eq "Pending" }
+                while (!$sqlServerPrivateEndpointConnection)
+                {
+                    if ($counter -ge 12)
+                    {
+                        Write-Error "Azure SQL Server private link not available."
+                        $exportFailed = $true
+                        break
+                    }
+                    $counter += 1
+                    Write-Host "Waiting for Azure SQL Server private link connection info..."
+                    Start-Sleep -Seconds 15
+                    $sqlServerPrivateEndpointConnection = Get-AzPrivateEndpointConnection -PrivateLinkResourceId $DbServerResourceIdForPrivateLink | where { $_.Name.StartsWith('ImportExportPrivateLink_SQL') } | where {$_.PrivateLinkServiceConnectionState.Status -eq "Pending" }
+                }
+
+                $counter = 1
+                $storagePrivateEndpointConnection = Get-AzPrivateEndpointConnection -PrivateLinkResourceId $StorageResourceIdForPrivateLink | where {$_.PrivateLinkServiceConnectionState.Status -eq "Pending" }
+                while (!$storagePrivateEndpointConnection)
+                {
+                    if ($counter -ge 12)
+                    {
+                        Write-Error "Azure Storage private link not available."
+                        $exportFailed = $true
+                        break
+                    }
+                    $counter += 1
+                    Write-Host "Waiting for Storage private link connection info..."
+                    Start-Sleep -Seconds 15
+                    $storagePrivateEndpointConnection = Get-AzPrivateEndpointConnection -PrivateLinkResourceId $StorageResourceIdForPrivateLink | where {$_.PrivateLinkServiceConnectionState.Status -eq "Pending" }
+                }
 
                 if ($sqlServerPrivateEndpointConnection)
                 {
                     Write-Host "Accepting SQL Server private link..."
                     Approve-AzPrivateEndpointConnection -ResourceId $sqlServerPrivateEndpointConnection.Id
                 }
-                else
-                {
-                    Write-Host "Azure SQL Server private link not available."
-                    $exportFailed = $true
-                }
 
                 if ($storagePrivateEndpointConnection)
                 {
                     Write-Host "Accepting Storage private link..."
                     Approve-AzPrivateEndpointConnection -ResourceId $storagePrivateEndpointConnection.Id
-                }
-                else
-                {
-                    Write-Host "Azure Storage private link not available."
-                    $exportFailed = $true
                 }
             }
 
