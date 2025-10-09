@@ -1,8 +1,6 @@
 ﻿$sleepDurationSeconds = 15
 $waitSingleAzureSqlDatabaseExportCompletionMinutes = 120
 
-# Expecting ErrorActionPreference is set to "Continue".
-
 function Export-AzureSqlDatabases
 {
     param($DbServerName,
@@ -30,10 +28,10 @@ function Export-AzureSqlDatabases
 
     Write-Host "Listing databases..."
     $allDatabases = Get-AzSqlDatabase -ServerName $DbServerName.ToLower() -ResourceGroupName $DbServerResourceGroupName    
-    $databases = $allDatabases
-        | Where-Object { $_.Edition -ne "System" }
-        | Where-Object { $_.Edition -ne "None" }
-        | Where-Object { $_.DatabaseName -notmatch '_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}Z$' }
+    $databases = $allDatabases `
+        | Where-Object { $_.Edition -ne "System" } `
+        | Where-Object { $_.Edition -ne "None" } `
+        | Where-Object { $_.DatabaseName -notmatch '_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}Z$' } `
         | Sort-Object -Property DatabaseName
     Write-Host "Found $($databases.Count) database(s) to export."
 
@@ -48,7 +46,7 @@ function Export-AzureSqlDatabases
         }
         catch
         {
-            Write-Error "Caught exception: $($_.Exception.Message)"
+            Write-Error "Caught exception: $($_.Exception.Message)" -ErrorAction Continue
             $exportFailed = $true
         }
     }
@@ -93,7 +91,7 @@ function Export-SingleAzureSqlDatabase
     catch [RetryException]
     {
         # pokdu došlo k chybě, ze které se máme pokusit zotavit, počkáme chvilku a zkusíme export znovu (ale ne donekonečna)
-        Write-Error $exception.Message
+        Write-Error $exception.Message -ErrorAction Continue
         Write-Host "Waiting 10 minutes..."
         Start-Sleep -Seconds 600 # 10 minutes
         if ($depth -lt 5) # max attempts per database
