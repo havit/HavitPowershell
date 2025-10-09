@@ -1,6 +1,8 @@
 ﻿$sleepDurationSeconds = 15
 $waitSingleAzureSqlDatabaseExportCompletionMinutes = 120
 
+# Expecting ErrorActionPreference is set to "Continue".
+
 function Export-AzureSqlDatabases
 {
     param($DbServerName,
@@ -28,25 +30,25 @@ function Export-AzureSqlDatabases
 
     Write-Host "Listing databases..."
     $allDatabases = Get-AzSqlDatabase -ServerName $DbServerName.ToLower() -ResourceGroupName $DbServerResourceGroupName    
-    $databases = $allDatabases | Where-Object { $_.Edition -ne "System" } | Where-Object { $_.Edition -ne "None" } | Sort-Object -Property DatabaseName
+    $databases = $allDatabases
+        | Where-Object { $_.Edition -ne "System" }
+        | Where-Object { $_.Edition -ne "None" }
+        | Where-Object { $_.DatabaseName -notmatch '_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}Z$' }
+        | Sort-Object -Property DatabaseName
+    Write-Host "Found $($databases.Count) database(s) to export."
 
     #EXPORT DATABASES
     $exportFailed = $false
     
     foreach ($database in $databases)
     { 
-        if ($database.DatabaseName -match '_d{4}-\d{2}-\d{2}T\d{2}-\d{2}Z$')
-        {
-            Write-Host "Skipping export $($database.DatabaseName) database."
-        }
-        
         try
         {
             Export-SingleAzureSqlDatabase -database $database
         }
         catch
         {
-            Write-Error "Caught: $($_.Exception.Message)"
+            Write-Error "Caught exception: $($_.Exception.Message)"
             $exportFailed = $true
         }
     }
@@ -149,9 +151,10 @@ function Start-SingleAzureSqlDatabaseExport
     }
     catch
     {
+        Write-Warning $_.Exception.Message
+
         if ($_.Exception.Message.Contains('There is an import or export operation in progress on the database'))
         {
-            Write-Warning $_.Exception.Message
             Write-Host "Export $($database.DatabaseName) already started."
             # pokud již import běží, nebudeme další spouštět
             return $null
