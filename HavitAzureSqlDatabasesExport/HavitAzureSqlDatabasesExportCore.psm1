@@ -124,7 +124,7 @@ function Start-SingleAzureSqlDatabaseExport
         StorageKeyType                      = "StorageAccessKey"
         StorageKey                          = $StorageKey
         StorageUri                          = $storageBlobUri
-        UseNetworkIsolation                 = $true
+        UseNetworkIsolation                 = [bool]$DbServerResourceIdForPrivateLink # $true $DbServerResourceIdForPrivateLink is set
         AdministratorLogin                  = $DbServerAdministratorUsername
         AdministratorLoginPassword          = $DbServerAdministratorPassword
         StorageAccountResourceIdForPrivateLink = $StorageResourceIdForPrivateLink
