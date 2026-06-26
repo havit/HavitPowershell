@@ -58,9 +58,10 @@ function Publish-HavitWebsitePackageInternal {
         [string] $Username,
         [string] $Password,
         [string] $DeploySetParametersFile = $null,
+        [bool] $UseChecksum = $true,
         [object[]] $CustomMsDeployArguments = $null
     )
-     
+
     # try to find wdp file if not specified
     if (!$WdpFile)
     {
@@ -80,7 +81,10 @@ function Publish-HavitWebsitePackageInternal {
     $msDeployArguments += '-disableLink:ContentExtension'
     $msDeployArguments += '-disableLink:CertificateExtension'
     $msDeployArguments += '-allowUntrusted'
-    $msDeployArguments += '-useChecksum'    
+    if ($UseChecksum)
+    {
+        $msDeployArguments += '-useChecksum'
+    }
     if ($env:VerboseMsDeploy -eq $true)
     {
         $msDeployArguments += '-verbose'    
@@ -131,18 +135,22 @@ function Publish-HavitWebsiteFileInternal {
         [string] $Password,
         [string] $WebsiteName,
         [string] $SourceFile,
-        [string] $TargetFile
+        [string] $TargetFile,
+        [bool] $UseChecksum = $true
     )
 
     $auth = (Get-MsDeployAuthentiocationPart -Username $Username -Password $Password)
-    
+
     # create arguments for msdeploy.exe
     $msDeployArguments =  @()
     $msDeployArguments += '-verb:sync'
     $msDeployArguments += '-enableRule:DoNotDeleteRule'
     $msDeployArguments += '-allowUntrusted'
-    $msDeployArguments += '-useChecksum'    
-    $msDeployArguments += '-source:contentPath="{0}"' -f ([IO.Path]::GetFullPath($SourceFile))    
+    if ($UseChecksum)
+    {
+        $msDeployArguments += '-useChecksum'
+    }
+    $msDeployArguments += '-source:contentPath="{0}"' -f ([IO.Path]::GetFullPath($SourceFile))
     $msDeployArguments += '-dest:contentPath="{0}/{1}",computerName="{2}",includeAcls=False,{3}' -f $WebsiteName, $TargetFile, $Url, $auth
 
     Write-Host Uploading application offline file... -ForegroundColor Yellow
@@ -299,6 +307,9 @@ Name of *.SetParameters.xml files to be used.
 .PARAMETER $CustomMsDeployArguments
 Custom MsDeploy Arguments (to be added to msdeploy commend line).
 
+.PARAMETER UseChecksum
+Use the -useChecksum MSDeploy switch (compares files by checksum instead of last modified date). Optional, default value $true.
+
 .INPUTS
 None. This function does not take input from the pipeline.
 
@@ -321,9 +332,10 @@ function Publish-HavitWebsitePackage {
         [string] $WebsiteName = $null,
         [string] $WdpFile = $null,
         [string] $DeploySetParametersFile = $null,
+        [bool] $UseChecksum = $true,
         [object[]] $CustomMsDeployArguments = $null
     )
-	Publish-HavitWebsitePackageInternal -Url $Url -Username $Username -Password $Password -WebsiteName $WebsiteName -WdpFile $WdpFile -DeploySetParametersFile $DeploySetParametersFile -CustomMsDeployArguments $CustomMsDeployArguments
+	Publish-HavitWebsitePackageInternal -Url $Url -Username $Username -Password $Password -WebsiteName $WebsiteName -WdpFile $WdpFile -DeploySetParametersFile $DeploySetParametersFile -CustomMsDeployArguments $CustomMsDeployArguments -UseChecksum $UseChecksum
 }
 
 
@@ -349,6 +361,9 @@ IIS WebSite name.
 .PARAMETER $AppOfflineFile
 Name of app_offline.htm file to upload. Optional, default value app_offline.htm.
 
+.PARAMETER UseChecksum
+Use the -useChecksum MSDeploy switch (compares files by checksum instead of last modified date). Optional, default value $true.
+
 .INPUTS
 None. This function does not take input from the pipeline.
 
@@ -368,10 +383,11 @@ function Publish-HavitWebsiteAppOfflineFile {
         [string] $Username,
         [string] $Password,
         [string] $WebsiteName,
-        [string] $AppOfflineFile = "app_offline.htm"
+        [string] $AppOfflineFile = "app_offline.htm",
+        [bool] $UseChecksum = $true
     )
-    
-    Publish-HavitWebsiteFileInternal -Url $Url -Username $Username -Password $Password -WebsiteName $WebsiteName -SourceFile $AppOfflineFile -TargetFile "app_offline.htm"
+
+    Publish-HavitWebsiteFileInternal -Url $Url -Username $Username -Password $Password -WebsiteName $WebsiteName -SourceFile $AppOfflineFile -TargetFile "app_offline.htm" -UseChecksum $UseChecksum
 }
 
 <#
@@ -437,12 +453,13 @@ function Publish-HavitWebsitePackageWithAppOfflineFile {
         [string] $AppOfflineFile = "app_offline.htm",
         [string] $WdpFile = $null,
         [string] $DeploySetParametersFile,
+        [bool] $UseChecksum = $true,
         [object[]] $CustomMsDeployArguments = $null,
         [bool] $NoWait = $false
     )
 
-    Publish-HavitWebsiteAppOfflineFile -Url $Url -Username $Username -Password $Password -WebsiteName $WebsiteName -AppOfflineFile $AppOfflineFile
-    Publish-HavitWebsitePackage -Url $Url -Username $Username -Password $Password -WebsiteName $WebsiteName -WdpFile $WdpFile -DeploySetParametersFile $DeploySetParametersFile -CustomMsDeployArguments $CustomMsDeployArguments
+    Publish-HavitWebsiteAppOfflineFile -Url $Url -Username $Username -Password $Password -WebsiteName $WebsiteName -AppOfflineFile $AppOfflineFile -UseChecksum $UseChecksum
+    Publish-HavitWebsitePackage -Url $Url -Username $Username -Password $Password -WebsiteName $WebsiteName -WdpFile $WdpFile -DeploySetParametersFile $DeploySetParametersFile -CustomMsDeployArguments $CustomMsDeployArguments -UseChecksum $UseChecksum
 
     if ($NoWait -eq $false)
     {
